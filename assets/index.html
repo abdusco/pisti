@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f1e8">
+  <meta name="description" content="A little luck. A perfect match. Play Pişti with a friend or meet Ada, your computer opponent. Free, private, and made for good company.">
+  <title>Pişti — Good cards. Better company.</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/vendor/qrcode-1.4.4.js" defer></script>
+  <script src="/app.js" type="module"></script>
+</head>
+<body x-data="pisti">
+  <header class="site-header">
+    <a class="brand" href="/" @click.prevent="home()" :aria-label="'Pişti · '+t('home')"><span class="brand-mark" aria-hidden="true">♣</span><span>pişti<span class="brand-dot">.</span></span></a>
+    <nav class="header-actions" aria-label="Preferences">
+      <button class="text-button help-button" @click="$refs.rules.showModal()"><span aria-hidden="true">ⓘ</span> <span x-text="t('rules')"></span></button>
+      <button x-cloak x-show="canInstall" class="text-button" @click="install()" x-text="t('install')"></button>
+      <label class="select-label"><span class="sr-only" x-text="t('theme')"></span><select aria-label="Appearance" x-model="theme" @change="applyTheme()"><option value="system" x-text="t('system')"></option><option value="light" x-text="t('light')"></option><option value="dark" x-text="t('dark')"></option></select></label>
+      <div class="language-switch" :aria-label="t('language')"><button :class="{selected:lang==='en'}" @click="setLanguage('en')" :aria-pressed="lang==='en'">EN</button><span aria-hidden="true">/</span><button :class="{selected:lang==='tr'}" @click="setLanguage('tr')" :aria-pressed="lang==='tr'">TR</button></div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="error-banner" role="alert" x-cloak x-show="error"><span x-text="t(error)"></span><button @click="error=''" :aria-label="t('close')">×</button></div>
+    <section class="home-page" x-show="!token">
+      <div class="home-hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="tiny-star" aria-hidden="true">✳</span> <span x-text="t('classic')"></span></p>
+          <h1><span x-text="t('headline1')"></span><br><em x-text="t('headline2')"></em></h1>
+          <p class="hero-intro" x-text="t('intro')"></p>
+          <div class="hero-facts"><span><span aria-hidden="true">♧</span> <span x-text="t('two')"></span></span><span><span aria-hidden="true">↗</span> <span x-text="t('target')"></span></span><span><span aria-hidden="true">♡</span> <span x-text="t('free')"></span></span></div>
+          <div class="card-art" aria-hidden="true">
+            <div class="art-oval"></div><span class="art-spark spark-one">✳</span><span class="art-spark spark-two">✧</span>
+            <div class="art-card art-back"><div class="back-pattern"><span>♣</span><small>PIŞTI</small></div></div>
+            <div class="art-card art-seven"><span class="art-corner">7<small>♠</small></span><div class="pips"><span>♠</span><span>♠</span><span>♠</span><span>♠</span><span>♠</span><span>♠</span><span>♠</span></div><span class="art-corner art-bottom">7<small>♠</small></span></div>
+            <div class="art-card art-ace"><span class="art-corner">A<small>♦</small></span><span class="ace-pip">♦</span><span class="art-corner art-bottom">A<small>♦</small></span></div>
+            <div class="pisti-stamp"><span>OH, HELLO</span><strong>pişti!</strong><span>THE PERFECT MATCH</span></div>
+            <span class="art-caption">a classic, with a fresh shuffle.</span>
+          </div>
+        </div>
+        <div class="join-card">
+          <div class="join-heading"><span class="join-suit" aria-hidden="true">♠</span><h2 x-text="t('chair')"></h2><p x-text="t('chairSub')"></p></div>
+          <div class="mode-tabs" role="group" aria-label="Game mode">
+            <button data-mode="bot" :class="{active:mode==='bot'}" :aria-pressed="mode==='bot'" @click="mode='bot';error=''" x-text="t('bot')"></button>
+            <button data-mode="friend" :class="{active:mode==='friend'}" :aria-pressed="mode==='friend'" @click="mode='friend';error=''" x-text="t('friend')"></button>
+            <button data-mode="join" :class="{active:mode==='join'}" :aria-pressed="mode==='join'" @click="mode='join';error=''" x-text="t('join')"></button>
+          </div>
+          <form @submit.prevent="join()">
+            <label class="field-label" for="player-name" x-text="t('name')"></label>
+            <input id="player-name" name="name" autocomplete="nickname" maxlength="24" required x-model="name" :placeholder="t('namePlaceholder')">
+            <div x-show="mode==='join'" class="room-field"><label class="field-label" for="room-code" x-text="t('roomCode')"></label><input id="room-code" name="room" autocomplete="off" autocapitalize="characters" maxlength="8" minlength="8" pattern="[A-Za-z0-9]{8}" :required="mode==='join'" :disabled="mode!=='join'" x-model="code" placeholder="ABCD1234"></div>
+            <p class="mode-note"><span class="status-dot" aria-hidden="true"></span><span x-text="t(mode==='bot'?'botNote':mode==='friend'?'friendNote':'joinNote')"></span></p>
+            <button class="primary-button" type="submit" :disabled="busy"><span x-text="busy?t('connecting'):t(mode==='bot'?'play':mode==='friend'?'create':'joinAction')"></span><span aria-hidden="true">↗</span></button>
+          </form>
+          <div class="join-bottom"><span aria-hidden="true">♣ ♦ ♥ ♠</span><span x-text="t('tagline')"></span></div>
+        </div>
+      </div>
+      <section class="how-section" aria-labelledby="how-heading"><div class="section-heading"><h2 id="how-heading" x-text="t('how')"></h2><p x-text="t('howSub')"></p></div><div class="steps">
+        <article><span class="step-number">01</span><div><h3 x-text="t('step1')"></h3><p x-text="t('step1Text')"></p></div><span class="step-symbol" aria-hidden="true">♠</span></article>
+        <article><span class="step-number">02</span><div><h3 x-text="t('step2')"></h3><p x-text="t('step2Text')"></p></div><span class="step-symbol" aria-hidden="true">♧</span></article>
+        <article><span class="step-number">03</span><div><h3 x-text="t('step3')"></h3><p x-text="t('step3Text')"></p></div><span class="step-symbol" aria-hidden="true">✳</span></article>
+      </div></section>
+      <section class="scoring-strip"><p class="eyebrow" x-text="t('scoring')"></p><div class="scoring-items"><div><b>A / J</b><span x-text="t('aceJack')"></span><strong>1</strong></div><div><b>2♣</b><span x-text="t('twoClubs')"></span><strong>2</strong></div><div><b class="red">10♦</b><span x-text="t('tenDiamonds')"></span><strong>3</strong></div><div><b>♧</b><span x-text="t('majority')"></span><strong>3</strong></div><div><b class="red">✳</b><span x-text="t('pisti')"></span><strong>10</strong></div><div><b>J / J</b><span x-text="t('double')"></span><strong>20</strong></div></div></section>
+    </section>
+
+    <section class="loading-screen" x-cloak x-show="token&&!snapshot" aria-live="polite"><span class="loading-club" aria-hidden="true">♣</span><h2 x-text="t(networkOnline?'connecting':'offline')"></h2><button class="text-button" @click="home()" x-text="t('home')"></button></section>
+
+    <template x-if="token&&snapshot">
+      <section class="game-page">
+        <div class="game-toolbar"><div><span class="eyebrow" x-text="t('round')+' '+snapshot.round" x-show="snapshot.round"></span><span class="room-badge" x-text="snapshot.room"></span><span class="connection-status" :class="{disconnected:!live}"><i class="status-dot"></i><span x-text="t(live?'connected':networkOnline?'reconnecting':'offline')"></span></span></div><div><button class="icon-button" @click="toggleSound()" :aria-label="t('sound')" :aria-pressed="sound" x-text="sound?'♪':'♩'"></button><button class="secondary-button" @click="invite()"><span x-text="t('invite')"></span><span aria-hidden="true">↗</span></button></div></div>
+        <div class="game-layout">
+          <div class="table-column">
+            <div class="game-table" :class="{'is-lobby':snapshot.phase==='lobby'}">
+              <template x-if="snapshot.phase==='lobby'"><div class="lobby-content"><div class="lobby-illustration" aria-hidden="true">♣</div><h2 x-text="opponent?t('chair'):t('waiting')"></h2><p x-text="opponent?t('tagline'):t('waitingText')"></p><div class="lobby-seats"><div><span class="avatar" x-text="me.name.slice(0,1).toUpperCase()"></span><strong x-text="me.name"></strong><span x-text="t('you')"></span></div><div><span class="avatar empty-avatar" x-text="opponent?opponent.name.slice(0,1).toUpperCase():'+'"></span><strong x-text="opponent?.name||'…'"></strong><span x-text="opponent?t(opponent.online?'connected':'reconnecting'):t('friend')"></span></div></div><button class="primary-button" x-show="!opponent" @click="invite()" x-text="t('invite')"></button><button class="table-text-button" x-show="!opponent" @click="action('bot')" :disabled="!live||pending" x-text="t('addBot')"></button><button class="primary-button" x-show="opponent&&snapshot.seat===0" @click="action('start')" :disabled="!live||pending" x-text="t('start')"></button><p x-show="opponent&&snapshot.seat!==0" x-text="t('hostStarts')"></p></div></template>
+              <template x-if="snapshot.phase!=='lobby'"><div class="table-play">
+                <div class="player-position opponent-position"><div class="player-label" :class="{'active-player':snapshot.turn!==snapshot.seat&&snapshot.phase==='playing'}"><span class="avatar" x-text="opponent.name.slice(0,1).toUpperCase()"></span><div><strong x-text="opponent.name"></strong><small x-text="opponent.bot?'Ada · '+t('bot'):t(opponent.online?'connected':'reconnecting')"></small></div><span class="dealer-tag" x-show="snapshot.dealer!==snapshot.seat" x-text="t('dealer')"></span></div><div class="opponent-hand" aria-label="Opponent card count"><template x-for="i in opponent.handCount" :key="i"><div class="mini-back" aria-hidden="true">♣</div></template></div></div>
+                <div class="center-area"><div class="deck-widget"><span class="tiny-label" x-text="t('deck')"></span><div class="deck-back"><span>♣</span><strong x-text="snapshot.deckCount"></strong></div><span class="bottom-card" :class="{red:red(snapshot.bottom)}" :title="t('bottom')" x-text="rank(snapshot.bottom)+suit(snapshot.bottom)"></span></div><div class="pile-widget"><template x-if="snapshot.top"><div class="pile-stack"><div class="pile-under" x-show="snapshot.pileCount>1"></div><div class="playing-card table-card" :class="{red:red(snapshot.top)}" :aria-label="cardName(snapshot.top)"><span class="card-corner"><b x-text="rank(snapshot.top)"></b><i x-text="suit(snapshot.top)"></i></span><span class="card-pip" x-text="suit(snapshot.top)"></span><span class="card-corner card-bottom"><b x-text="rank(snapshot.top)"></b><i x-text="suit(snapshot.top)"></i></span></div></div></template><div class="empty-pile" x-show="!snapshot.top"><span aria-hidden="true">✳</span><strong x-text="t('empty')"></strong><small x-text="t('emptySub')"></small></div><p class="pile-count" x-show="snapshot.top" x-text="snapshot.pileCount+' '+t('pile')"></p></div></div>
+                <div class="turn-label" role="status" aria-live="polite" :class="{'my-turn':snapshot.turn===snapshot.seat&&live}" x-show="snapshot.phase==='playing'"><span class="status-dot"></span><span x-text="turnText"></span></div>
+                <div class="player-position self-position"><div class="player-label" :class="{'active-player':snapshot.turn===snapshot.seat&&snapshot.phase==='playing'}"><span class="avatar" x-text="me.name.slice(0,1).toUpperCase()"></span><div><strong x-text="me.name+' · '+t('you')"></strong><small x-text="t('captured')+': '+me.captured"></small></div><span class="dealer-tag" x-show="snapshot.dealer===snapshot.seat" x-text="t('dealer')"></span></div></div>
+              </div></template>
+            </div>
+            <div class="hand-area" x-show="snapshot.phase==='playing'"><div class="hand-title"><span class="eyebrow" x-text="t('yourHand')"></span><span x-text="t(snapshot.turn===snapshot.seat&&live?'tap':'wait')"></span></div><div class="hand"><template x-for="card in snapshot.hand" :key="card.id"><button class="playing-card hand-card" :class="{red:red(card),playable:live&&snapshot.legal.includes(card.id)}" :disabled="!live||pending||!snapshot.legal.includes(card.id)" @click="action('play',card.id)" :aria-label="cardName(card)"><span class="card-corner"><b x-text="rank(card)"></b><i x-text="suit(card)"></i></span><span class="card-pip" x-text="suit(card)"></span><span class="card-corner card-bottom"><b x-text="rank(card)"></b><i x-text="suit(card)"></i></span><span class="card-play-arrow" aria-hidden="true">↑</span></button></template></div></div>
+            <div class="round-summary" x-show="snapshot.phase==='round_over'||snapshot.phase==='finished'" role="status"><p class="eyebrow" x-text="t(snapshot.phase==='finished'?'matchOver':'roundOver')"></p><h2 x-text="snapshot.phase==='finished'?(snapshot.players[snapshot.winner]?.name+' '+t('winner')):t('roundText')"></h2><div class="round-results"><template x-for="(result,seat) in snapshot.results" :key="seat"><div><h3 x-text="snapshot.players[seat].name"></h3><dl><div><dt x-text="t('captured')"></dt><dd x-text="result.cards"></dd></div><div><dt x-text="t('cardPoints')"></dt><dd x-text="result.points"></dd></div><div><dt x-text="t('bonus')"></dt><dd x-text="result.bonus"></dd></div><div><dt x-text="t('majority')"></dt><dd x-text="result.majority"></dd></div><div class="result-total"><dt x-text="t('total')"></dt><dd x-text="'+'+result.total"></dd></div></dl></div></template></div><button class="primary-button" @click="action('next')" :disabled="!live||pending||snapshot.ready[snapshot.seat]" x-text="t(snapshot.ready[snapshot.seat]?'waitingReady':snapshot.phase==='finished'?'rematch':'next')"></button></div>
+          </div>
+          <aside class="game-sidebar">
+            <section class="score-panel"><div class="panel-heading"><h2 class="eyebrow" x-text="t('score')"></h2><span>101</span></div><template x-for="(player,seat) in snapshot.players" :key="seat"><div class="score-player"><div class="score-player-top"><strong x-text="player.name+(seat===snapshot.seat?' · '+t('you'):'')"></strong><b x-text="player.score"></b></div><div class="score-track"><span :style="'width:'+Math.min(100,player.score/101*100)+'%'"></span></div><div class="score-details"><span x-text="player.captured+' '+t('cards')"></span><span x-text="t('bonus')+': +'+player.bonus"></span></div></div></template></section>
+            <section class="capture-panel"><h2 class="eyebrow" x-text="t('lastCapture')"></h2><template x-if="snapshot.lastCapture"><div class="last-capture"><span class="capture-suit" :class="{red:red(snapshot.lastCapture.card)}" x-text="rank(snapshot.lastCapture.card)+suit(snapshot.lastCapture.card)"></span><p><strong x-text="snapshot.players[snapshot.lastCapture.seat].name"></strong><span x-text="t('took')+' '+snapshot.lastCapture.count+' '+t('cards')"></span><b class="capture-bonus" x-show="snapshot.lastCapture.bonus" x-text="t('pisti')+'! +'+snapshot.lastCapture.bonus"></b></p></div></template><p class="muted" x-show="!snapshot.lastCapture" x-text="t('noCapture')"></p></section>
+            <section class="table-rules"><h2 class="eyebrow" x-text="t('scoring')"></h2><div><span>A / J</span><b>1</b></div><div><span>2♣</span><b>2</b></div><div><span class="red">10♦</span><b>3</b></div><div><span x-text="t('majority')"></span><b>3</b></div><div><span x-text="t('pisti')"></span><b>10</b></div><div><span x-text="t('double')"></span><b>20</b></div></section>
+            <section class="history-panel"><h2 class="eyebrow" x-text="t('history')"></h2><p class="muted" x-show="!snapshot.history.length" x-text="t('noHistory')"></p><ol class="move-history"><template x-for="(move,index) in snapshot.history.slice().reverse()" :key="snapshot.history.length-index"><li><span class="history-card" :class="{red:red(move.card)}" x-text="rank(move.card)+suit(move.card)"></span><div><strong x-text="snapshot.players[move.seat].name"></strong><small x-text="move.capture?t('took')+' '+move.capture+' '+t('cards'):t('played')"></small></div><span class="history-bonus" x-show="move.bonus" x-text="'+'+move.bonus"></span></li></template></ol></section>
+          </aside>
+        </div>
+      </section>
+    </template>
+  </main>
+  <footer class="site-footer"><span><span aria-hidden="true" class="red">♣</span> <span x-text="t('tagline')"></span></span><button class="text-button" @click="$refs.rules.showModal()" x-text="t('rules')"></button><span class="footer-suits" aria-hidden="true">♠ <i>♥</i> ♣ <i>♦</i></span></footer>
+
+  <dialog x-ref="invitation" class="modal invite-modal" @click="if($event.target===$refs.invitation)$refs.invitation.close()" aria-labelledby="invite-title"><div class="modal-content"><button class="modal-close" @click="$refs.invitation.close()" :aria-label="t('close')">×</button><p class="eyebrow">PIŞTI · <span x-text="snapshot?.room"></span></p><h2 id="invite-title" x-text="t('invite')"></h2><p class="muted" x-text="t('inviteText')"></p><div class="qr-code" x-ref="qr" role="img" aria-label="Room invitation QR code"></div><input class="invite-link" x-ref="inviteLink" :value="inviteURL" readonly aria-label="Room invitation link"><button class="primary-button" @click="copyInvite()" x-text="t(copied?'copied':'copy')"></button><button class="text-button share-button" @click="shareInvite()" x-text="t('share')"></button></div></dialog>
+  <dialog x-ref="rules" class="modal rules-modal" @click="if($event.target===$refs.rules)$refs.rules.close()" aria-labelledby="rules-title"><div class="modal-content"><button class="modal-close" @click="$refs.rules.close()" :aria-label="t('close')">×</button><p class="eyebrow" x-text="t('classic')"></p><h2 id="rules-title" x-text="t('rulesTitle')"></h2><p x-text="t('rulesIntro')"></p><ol class="rules-list"><li><h3 x-text="t('step1')"></h3><p x-text="t('ruleDeal')"></p></li><li><h3 x-text="t('step2')"></h3><p x-text="t('ruleCapture')"></p></li><li><h3 x-text="t('step3')"></h3><p x-text="t('rulePisti')"></p></li><li><h3 x-text="t('score')"></h3><p x-text="t('ruleFinish')"></p></li></ol><div class="rule-scores"><div><span x-text="t('aceJack')"></span><b>1</b></div><div><span x-text="t('twoClubs')"></span><b>2</b></div><div><span x-text="t('tenDiamonds')"></span><b>3</b></div><div><span x-text="t('majority')"></span><b>3</b></div><div><span x-text="t('pisti')"></span><b>10</b></div><div><span x-text="t('double')"></span><b>20</b></div></div><p class="session-note" x-text="t('sessionNote')"></p><button class="primary-button" @click="$refs.rules.close()" x-text="t('play')"></button></div></dialog>
+</body>
+</html>

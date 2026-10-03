@@ -1,0 +1,1 @@
+{"name":"pisti","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js","test:ui":"node --test tests/ui.test.mjs"},"devDependencies":{"playwright":"1.58.2"}}
